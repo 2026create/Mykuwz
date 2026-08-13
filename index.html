@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <title>乡村英语小老师 📚</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary: #4CAF50;
+      --primary-dark: #388E3C;
+      --primary-light: #E8F5E9;
+      --accent: #FF9800;
+      --accent-light: #FFF3E0;
+      --bg-start: #E8F5E9;
+      --bg-end: #FFF8E1;
+      --user-bubble: #4CAF50;
+      --teacher-bubble: #FFFFFF;
+      --text-dark: #2D3436;
+      --text-gray: #636E72;
+      --border: #E0E0E0;
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      --radius: 16px;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+      display: flex;
+      justify-content: center;
+      color: var(--text-dark);
+    }
+
+    .app {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      background: var(--bg-start);
+      background: linear-gradient(180deg, var(--bg-start) 0%, #FFFFFF 15%, #FFFFFF 85%, var(--bg-end) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, #66BB6A 100%);
+      color: white;
+      padding: 14px 20px;
+      padding-top: max(14px, env(safe-area-inset-top));
+      text-align: center;
+      position: relative;
+      border-radius: 0 0 24px 24px;
+      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.25);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .header .subtitle {
+      font-size: 0.8rem;
+      opacity: 0.92;
+      font-weight: 600;
+    }
+
+    .header-btn {
+      position: absolute;
+      top: max(14px, env(safe-area-inset-top));
+      right: 16px;
+      background: rgba(255, 255, 255, 0.22);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      backdrop-filter: blur(4px);
+    }
+
+    .header-btn:active {
+      transform: scale(0.9);
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    /* ===== Chat Area ===== */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chat-area::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .chat-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat-area::-webkit-scrollbar-thumb {
+      background: rgba(76, 175, 80, 0.3);
+      border-radius: 2px;
+    }
+
+    /* ===== Message Bubbles ===== */
+    .message {
+      max-width: 82%;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      line-height: 1.65;
+      word-wrap: break-word;
+      word-break: break-word;
+      animation: msgIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    @keyframes msgIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--user-bubble);
+      color: white;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .message.teacher {
+      align-self: flex-start;
+      background: var(--teacher-bubble);
+      color: var(--text-dark);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .message.teacher .avatar {
+      position: absolute;
+      left: -38px;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary), #66BB6A);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+    }
+
+    .message-wrapper {
+      position: relative;
+      padding-left: 0;
+    }
+
+    .message-wrapper.has-avatar {
+      padding-left: 44px;
+    }
+
+    /* Markdown content styles */
+    .message.teacher p {
+      margin-bottom: 8px;
+    }
+
+    .message.teacher p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message.teacher strong {
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .message.teacher em {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .message.teacher code {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.88em;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .message.teacher ul,
+    .message.teacher ol {
+      margin: 6px 0 8px 0;
+      padding-left: 20px;
+    }
+
+    .message.teacher li {
+      margin-bottom: 4px;
+    }
+
+    .message.teacher h1,
+    .message.teacher h2,
+    .message.teacher h3 {
+      font-size: 1.05em;
+      font-weight: 700;
+      margin: 8px 0 6px 0;
+      color: var(--primary-dark);
+    }
+
+    .message.teacher blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 12px;
+      margin: 8px 0;
+      color: var(--text-gray);
+      font-style: italic;
+    }
+
+    .message.error {
+      align-self: center;
+      background: #FFEBEE;
+      color: #C62828;
+      border: 1px solid #FFCDD2;
+      font-size: 0.85rem;
+      text-align: center;
+      max-width: 90%;
+    }
+
+    /* ===== Typing Indicator ===== */
+    .typing-bubble {
+      align-self: flex-start;
+      background: var(--teacher-bubble);
+      padding: 14px 20px;
+      border-radius: var(--radius);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      display: flex;
+      gap: 5px;
+      animation: msgIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .typing-bubble span {
+      width: 8px;
+      height: 8px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out;
+    }
+
+    .typing-bubble span:nth-child(2) { animation-delay: 0.16s; }
+    .typing-bubble span:nth-child(3) { animation-delay: 0.32s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ===== Quick Actions ===== */
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .quick-actions::-webkit-scrollbar { display: none; }
+
+    .quick-btn {
+      white-space: nowrap;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+
+    .quick-btn:active { transform: scale(0.93); }
+
+    .quick-btn:nth-child(1) {
+      background: #E3F2FD;
+      color: #1565C0;
+    }
+    .quick-btn:nth-child(2) {
+      background: var(--accent-light);
+      color: #E65100;
+    }
+    .quick-btn:nth-child(3) {
+      background: #F3E5F5;
+      color: #6A1B9A;
+    }
+    .quick-btn:nth-child(4) {
+      background: #E0F2F1;
+      color: #00695C;
+    }
+
+    /* ===== Input Area ===== */
+    .input-area {
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: white;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      align-items: flex-end;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    textarea {
+      width: 100%;
+      border: 2px solid var(--border);
+      border-radius: 22px;
+      padding: 10px 18px;
+      font-size: 15px;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      line-height: 1.5;
+      max-height: 100px;
+      min-height: 42px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      background: #FAFAFA;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+      background: white;
+    }
+
+    textarea::placeholder {
+      color: #BDBDBD;
+    }
+
+    #sendBtn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    #sendBtn:hover {
+      background: var(--primary-dark);
+      transform: scale(1.05);
+    }
+
+    #sendBtn:active {
+      transform: scale(0.92);
+    }
+
+    #sendBtn:disabled {
+      background: #A5D6A7;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* ===== Welcome Screen ===== */
+    .welcome-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      gap: 20px;
+      text-align: center;
+    }
+
+    .welcome-icon {
+      font-size: 3.5rem;
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      60% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .welcome-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .welcome-desc {
+      font-size: 0.95rem;
+      color: var(--text-gray);
+      line-height: 1.6;
+      max-width: 320px;
+    }
+
+    .welcome-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 280px;
+      margin-top: 8px;
+    }
+
+    .welcome-card {
+      background: white;
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .welcome-card:active {
+      transform: scale(0.97);
+      border-color: var(--primary);
+    }
+
+    .welcome-card .card-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .welcome-card .card-text {
+      text-align: left;
+    }
+
+    .welcome-card .card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-dark);
+    }
+
+    .welcome-card .card-sub {
+      font-size: 0.75rem;
+      color: var(--text-gray);
+    }
+
+    /* ===== Responsive ===== */
+    @media (min-width: 641px) {
+      .app {
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    @media (max-width: 380px) {
+      .header h1 { font-size: 1.15rem; }
+      .message { font-size: 14px; }
+      .quick-btn { font-size: 0.8rem; padding: 7px 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <h1>📚 乡村英语小老师</h1>
+      <div class="subtitle">陪你快乐学英语！🌈</div>
+      <button class="header-btn" onclick="clearChat()" title="新对话">🔄</button>
+    </header>
+
+    <!-- Chat Area -->
+    <main class="chat-area" id="chatArea">
+      <!-- Welcome screen will be shown initially -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">👋</div>
+        <div class="welcome-title">Hello! 我是你的英语小老师</div>
+        <div class="welcome-desc">想学英语吗？告诉我你想做什么，我们一起开始吧！</div>
+        <div class="welcome-cards">
+          <div class="welcome-card" onclick="sendQuickAction('帮我背单词')">
+            <span class="card-icon">📖</span>
+            <div class="card-text">
+              <div class="card-title">背单词</div>
+              <div class="card-sub">教你有趣的记忆方法</div>
+            </div>
+          </div>
+          <div class="welcome-card" onclick="sendQuickAction('开始听写')">
+            <span class="card-icon">✏️</span>
+            <div class="card-text">
+              <div class="card-title">听写单词</div>
+              <div class="card-sub">考考你记没记住</div>
+            </div>
+          </div>
+          <div class="welcome-card" onclick="sendQuickAction('给我讲个英语文化故事')">
+            <span class="card-icon">🌍</span>
+            <div class="card-text">
+              <div class="card-title">听故事</div>
+              <div class="card-sub">了解英语国家的有趣文化</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="sendQuickAction('帮我背单词')">📖 背单词</button>
+      <button class="quick-btn" onclick="sendQuickAction('开始听写')">✏️ 听写</button>
+      <button class="quick-btn" onclick="sendQuickAction('给我讲个英语文化故事')">🌍 听故事</button>
+      <button class="quick-btn" onclick="sendQuickAction('学音标')">🔤 学音标</button>
+    </div>
+
+    <!-- Input Area -->
+    <footer class="input-area">
+      <div class="input-wrapper">
+        <textarea id="userInput" placeholder="输入你想说的话..." rows="1"></textarea>
+      </div>
+      <button id="sendBtn" onclick="handleSend()">➤</button>
+    </footer>
+  </div>
+
+  <script>
+    // ========== Configuration ==========
+    const APP_ID = 'aa547c8e5ef3451596705ec1fc0f5a0f';
+    const API_KEY = 'sk-ws-H.EELLMEI.YjxH.MEUCIBPtPKKZ36gE__QI3gg0868um7ib3wy1W2GriKf040OlAiEA2ZNgVjY7gPNwJSAnoHKwgwIHQbrsRaqBJk57_e5XxJY';
+    const API_URL = `https://dashscope.aliyuncs.com/api/v1/apps/${APP_ID}/completion`;
+
+    // State
+    let sessionId = null;
+    let isWaiting = false;
+    let welcomeShown = true;
+
+    // ========== Markdown Rendering ==========
+    function renderMarkdown(text) {
+      if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        marked.setOptions({ breaks: true, gfm: true });
+        return DOMPurify.sanitize(marked.parse(text));
+      }
+      // Fallback: escape HTML and convert newlines
+      const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return escaped.replace(/\n/g, '<br>');
+    }
+
+    // ========== UI Helpers ==========
+    function removeWelcomeScreen() {
+      const ws = document.getElementById('welcomeScreen');
+      if (ws) {
+        ws.style.transition = 'opacity 0.3s';
+        ws.style.opacity = '0';
+        setTimeout(() => ws.remove(), 300);
+      }
+      welcomeShown = false;
+    }
+
+    function addMessage(text, role, useMarkdown) {
+      removeWelcomeScreen();
+
+      const chatArea = document.getElementById('chatArea');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message-wrapper';
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+
+      if (role === 'teacher') {
+        // Add avatar
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = '👩‍🏫';
+        wrapper.classList.add('has-avatar');
+        wrapper.appendChild(avatar);
+
+        if (useMarkdown !== false) {
+          messageDiv.innerHTML = renderMarkdown(text);
+        } else {
+          messageDiv.textContent = text;
+        }
+      } else {
+        messageDiv.textContent = text;
+      }
+
+      wrapper.appendChild(messageDiv);
+      chatArea.appendChild(wrapper);
+      scrollToBottom();
+      return messageDiv;
+    }
+
+    function addErrorMessage(text) {
+      removeWelcomeScreen();
+      const chatArea = document.getElementById('chatArea');
+      const msg = document.createElement('div');
+      msg.className = 'message error';
+      msg.innerHTML = text;
+      chatArea.appendChild(msg);
+      scrollToBottom();
+    }
+
+    function showTypingIndicator() {
+      removeWelcomeScreen();
+      const chatArea = document.getElementById('chatArea');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message-wrapper has-avatar';
+      wrapper.id = 'typingWrapper';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = '👩‍🏫';
+      wrapper.appendChild(avatar);
+
+      const bubble = document.createElement('div');
+      bubble.className = 'typing-bubble';
+      bubble.innerHTML = '<span></span><span></span><span></span>';
+      wrapper.appendChild(bubble);
+
+      chatArea.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function hideTypingIndicator() {
+      const wrapper = document.getElementById('typingWrapper');
+      if (wrapper) wrapper.remove();
+    }
+
+    function scrollToBottom() {
+      const chatArea = document.getElementById('chatArea');
+      requestAnimationFrame(() => {
+        chatArea.scrollTop = chatArea.scrollHeight;
+      });
+    }
+
+    // ========== API Call ==========
+    async function callAPI(prompt) {
+      const body = {
+        input: {
+          prompt: prompt
+        },
+        parameters: {},
+        debug: {}
+      };
+
+      // Include session_id for multi-turn conversation
+      if (sessionId) {
+        body.input.session_id = sessionId;
+      }
+
+      const options = {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      };
+
+      // Try direct call first
+      try {
+        const response = await fetch(API_URL, options);
+        if (response.ok) {
+          return await response.json();
+        }
+        // If not OK, try to parse error
+        const errorData = await response.json().catch(() => ({}));
+        throw { type: 'http', status: response.status, message: errorData.message || `HTTP ${response.status}` };
+      } catch (error) {
+        // If it's a network/CORS error (TypeError), try CORS proxy
+        if (error instanceof TypeError) {
+          console.log('Direct call failed (likely CORS), trying proxy...');
+          return await callAPIViaProxy(body);
+        }
+        throw error;
+      }
+    }
+
+    async function callAPIViaProxy(body) {
+      // Use CORS proxy as fallback
+      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(API_URL)}`;
+      const options = {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      };
+
+      const response = await fetch(proxyUrl, options);
+      if (response.ok) {
+        return await response.json();
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw { type: 'http', status: response.status, message: errorData.message || `HTTP ${response.status}` };
+    }
+
+    // ========== Message Handling ==========
+    async function handleSend(text) {
+      if (typeof text !== 'string') {
+        const input = document.getElementById('userInput');
+        text = input.value.trim();
+        input.value = '';
+        input.style.height = 'auto';
+      }
+
+      if (!text || isWaiting) return;
+
+      isWaiting = true;
+      const sendBtn = document.getElementById('sendBtn');
+      sendBtn.disabled = true;
+
+      addMessage(text, 'user');
+      showTypingIndicator();
+
+      try {
+        const data = await callAPI(text);
+        hideTypingIndicator();
+
+        if (data.output && data.output.text) {
+          addMessage(data.output.text, 'teacher');
+          // Save session_id for multi-turn conversation
+          if (data.output.session_id) {
+            sessionId = data.output.session_id;
+          }
+        } else if (data.output && data.output.finish_reason === 'length') {
+          addMessage('回复太长了，老师说到一半被打断了，请让老师继续说好吗？😅', 'teacher');
+        } else {
+          addMessage('抱歉，老师没有听清楚，请再说一遍好吗？🤔', 'teacher');
+        }
+      } catch (error) {
+        hideTypingIndicator();
+
+        let errorMsg = '';
+        if (error.type === 'http') {
+          if (error.status === 401) {
+            errorMsg = '🔒 API Key 可能无效，请检查密钥是否正确。';
+          } else if (error.status === 404) {
+            errorMsg = '🔍 应用 ID 可能无效，请检查应用 ID 是否正确。';
+          } else if (error.status === 429) {
+            errorMsg = '⏰ 请求太多了，请稍等一下再试。';
+          } else if (error.status === 500) {
+            errorMsg = '😮 服务器开小差了，请稍后再试。';
+          } else {
+            errorMsg = `😅 出了点小问题：${error.message}<br>请稍后再试。`;
+          }
+        } else {
+          errorMsg = `😅 网络可能有问题：${error.message || '连接失败'}<br>请检查网络后重试。`;
+        }
+        addErrorMessage(errorMsg);
+        console.error('API Error:', error);
+      }
+
+      isWaiting = false;
+      sendBtn.disabled = false;
+      document.getElementById('userInput').focus();
+    }
+
+    function sendQuickAction(text) {
+      handleSend(text);
+    }
+
+    function clearChat() {
+      sessionId = null;
+      const chatArea = document.getElementById('chatArea');
+      chatArea.innerHTML = '';
+
+      // Re-show welcome screen
+      const welcomeHTML = `
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="welcome-icon">👋</div>
+          <div class="welcome-title">Hello! 我是你的英语小老师</div>
+          <div class="welcome-desc">想学英语吗？告诉我你想做什么，我们一起开始吧！</div>
+          <div class="welcome-cards">
+            <div class="welcome-card" onclick="sendQuickAction('帮我背单词')">
+              <span class="card-icon">📖</span>
+              <div class="card-text">
+                <div class="card-title">背单词</div>
+                <div class="card-sub">教你有趣的记忆方法</div>
+              </div>
+            </div>
+            <div class="welcome-card" onclick="sendQuickAction('开始听写')">
+              <span class="card-icon">✏️</span>
+              <div class="card-text">
+                <div class="card-title">听写单词</div>
+                <div class="card-sub">考考你记没记住</div>
+              </div>
+            </div>
+            <div class="welcome-card" onclick="sendQuickAction('给我讲个英语文化故事')">
+              <span class="card-icon">🌍</span>
+              <div class="card-text">
+                <div class="card-title">听故事</div>
+                <div class="card-sub">了解英语国家的有趣文化</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      chatArea.innerHTML = welcomeHTML;
+      welcomeShown = true;
+    }
+
+    // ========== Event Listeners ==========
+    document.addEventListener('DOMContentLoaded', function() {
+      const textarea = document.getElementById('userInput');
+
+      // Auto-resize textarea
+      textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+      });
+
+      // Enter to send, Shift+Enter for newline
+      textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+
+      // Focus input on load
+      textarea.focus();
+    });
+  </script>
+</body>
+</html>
